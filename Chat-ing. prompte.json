@@ -1,0 +1,247 @@
+{
+  "name": "Chat-ing. prompte",
+  "nodes": [
+    {
+      "parameters": {
+        "availableInChat": true,
+        "agentName": "Chatbot agriculture",
+        "agentDescription": "Démonstration RQRAD pour le chatbot openAI",
+        "options": {
+          "allowFileUploads": true,
+          "responseMode": "streaming"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -816,
+        64
+      ],
+      "id": "f5110834-c237-4160-a8d2-0174ef26d094",
+      "name": "Chatbot",
+      "webhookId": "8f57fc73-5e0d-40ba-bf3a-08932f4362f7"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "files",
+        "options": {}
+      },
+      "id": "17b5b957-d29a-4dc0-a6b8-7a10b82b92e7",
+      "name": "Séparer les fichiers",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -656,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatbotData = $('Chatbot').first();\nconst binaryKeys = Object.keys(chatbotData.binary || {});\n\nconst items = $input.all().map((item, index) => {\n  const binaryKey = binaryKeys[index];\n  return {\n    json: item.json,\n    binary: binaryKey ? { data: chatbotData.binary[binaryKey] } : {}\n  };\n});\n\nreturn items;"
+      },
+      "id": "35e7f4fe-4abd-40fb-adf6-525df122ed36",
+      "name": "Mapper les données binaires",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "2bd76b60-d9bf-40a9-95db-042938398385",
+      "name": "Itération sur les fichiers",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -304,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -112,
+        144
+      ],
+      "id": "70ec846e-e9a2-4191-a2fa-38e955580f53",
+      "name": "Extrait du fichier"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "allCsvData",
+        "options": {}
+      },
+      "id": "33e32ba1-cf16-4eb3-a68b-9f92221f6c76",
+      "name": "Combiner des données CSV",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Traitement de fichier CSV.",
+        "height": 368,
+        "width": 736
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        -32
+      ],
+      "id": "4763033f-e3fa-409d-8856-50188c9ceb48",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gemini-3-flash-preview",
+          "mode": "list",
+          "cachedResultName": "gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $('Chatbot').item.json.chatInput }}\n{{ JSON.stringify($json.allCsvData, null, 2) }}"
+            },
+            {
+              "content": "You are a helpful agricultural assistant that analyzes CSV. data and answers questions about it.\n\nYou have access to CSV. data that has been uploaded by the user. Use this data to answer their questions accurately and provide insights.\n\nWhen analyzing the data:\n1. Carefully examine the structure and content of the CSV.\n2. Provide clear, concise answers based on the data\n3. If calculations are needed, perform them accurately\n4. If the question cannot be answered with the available data, explain what information is missing\n5. Format your responses in a clear, easy-to-read manner\n6. Think step-by-step\n7. Respond in French",
+              "role": "assistant"
+            }
+          ]
+        },
+        "options": {
+          "system": "Additional information:\n(Fertilizer initial application - side-dress)\nT1 (0N+0N)\nT2 (0N+85N)\nT3 (40N+0N)\nT4 (40N+130N)\nT5 (170N+130N)"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.ollama",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -16
+      ],
+      "id": "06ac02ba-e2fc-49c6-8e13-d7b8483546ba",
+      "name": "Traitement txt. + ing. prompte",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Y649xrHy2wp9MoNA",
+          "name": "Ollama account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chatbot": {
+      "main": [
+        [
+          {
+            "node": "Séparer les fichiers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Séparer les fichiers": {
+      "main": [
+        [
+          {
+            "node": "Mapper les données binaires",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mapper les données binaires": {
+      "main": [
+        [
+          {
+            "node": "Itération sur les fichiers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Itération sur les fichiers": {
+      "main": [
+        [
+          {
+            "node": "Combiner des données CSV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extrait du fichier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrait du fichier": {
+      "main": [
+        [
+          {
+            "node": "Itération sur les fichiers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combiner des données CSV": {
+      "main": [
+        [
+          {
+            "node": "Traitement txt. + ing. prompte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "a69c0cd6-ad5b-4334-a838-78ce19c84a63",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c6d2fbe3f29f0c2a989f279e7bd923b83ddfd5108b5c96718abf62d435db1c57"
+  },
+  "id": "EK2WQpCbvqja0ZpcfEXY6",
+  "tags": [
+    {
+      "updatedAt": "2026-01-18T17:35:27.105Z",
+      "createdAt": "2026-01-18T17:35:27.105Z",
+      "id": "OHfKuIGpMIvkqHuo",
+      "name": "RQRAD"
+    },
+    {
+      "updatedAt": "2026-01-18T17:36:18.822Z",
+      "createdAt": "2026-01-18T17:36:18.822Z",
+      "id": "eDoxFZjAsrBRIetD",
+      "name": "Demo"
+    }
+  ]
+}

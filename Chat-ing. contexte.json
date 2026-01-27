@@ -1,0 +1,478 @@
+{
+  "name": "Chat-ing. contexte",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=https://agriculture.canada.ca/en",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        1568,
+        688
+      ],
+      "id": "30a00b3e-b266-43e0-8961-08e6c484c1f8",
+      "name": "Internet"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "files",
+        "options": {}
+      },
+      "id": "2741f311-49cd-45f1-a678-6dc3dd58e4ce",
+      "name": "Séparer les fichiers",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        720,
+        592
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatbotData = $('Chatbot').first();\nconst binaryKeys = Object.keys(chatbotData.binary || {});\n\nconst items = $input.all().map((item, index) => {\n  const binaryKey = binaryKeys[index];\n  return {\n    json: item.json,\n    binary: binaryKey ? { data: chatbotData.binary[binaryKey] } : {}\n  };\n});\n\nreturn items;"
+      },
+      "id": "17862552-53dc-4c2d-ae09-5f73218ae01a",
+      "name": "Mapper les données binaires",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "f5ca4e4c-e914-4704-8edf-fa5a87d9f3c2",
+      "name": "Itération sur les fichiers",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1152,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1360,
+        672
+      ],
+      "id": "269767be-51da-49e3-8dfb-94ccc8df1cfc",
+      "name": "Extrait du fichier"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "allCsvData",
+        "options": {}
+      },
+      "id": "0007f861-d66d-4ef5-9e14-888bc15fbc14",
+      "name": "Combiner des données CSV",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Traitement de fichier CSV.",
+        "height": 400,
+        "width": 1024
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        496,
+        480
+      ],
+      "id": "cf7eaa25-3e51-4e2f-a41c-91aa207639f9",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "availableInChat": true,
+        "agentName": "Chatbot agriculture",
+        "agentDescription": "Démonstration RQRAD pour le chatbot openAI",
+        "options": {
+          "allowFileUploads": true,
+          "responseMode": "streaming"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        16,
+        880
+      ],
+      "id": "3d664894-6b66-4d27-983b-dbe67aab0ea1",
+      "name": "Chatbot",
+      "webhookId": "8f57fc73-5e0d-40ba-bf3a-08932f4362f7"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gemini-3-flash-preview",
+          "mode": "list",
+          "cachedResultName": "gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $('Chatbot').item.json.chatInput }}\n{{ JSON.stringify($json.allCsvData, null, 2) }}"
+            },
+            {
+              "content": "You are a helpful agricultural assistant that analyzes CSV. data and answers questions about it.\n\nYou have access to CSV. data that has been uploaded by the user. Use this data to answer their questions accurately and provide insights.\n\nWhen analyzing the data:\n1. Carefully examine the structure and content of the CSV.\n2. Provide clear, concise answers based on the data\n3. If calculations are needed, perform them accurately\n4. If the question cannot be answered with the available data, explain what information is missing\n5. Format your responses in a clear, easy-to-read manner\n6. Use the connected tool\n7. Think step-by-step\n8. Respond in French",
+              "role": "assistant"
+            }
+          ]
+        },
+        "options": {
+          "system": "Additional information:\n(Fertilizer initial application - side-dress)\nT1 (0N+0N)\nT2 (0N+85N)\nT3 (40N+0N)\nT4 (40N+130N)\nT5 (170N+130N)"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.ollama",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        496
+      ],
+      "id": "f105fce9-5fe8-4eb2-973e-24572b724066",
+      "name": "Traitement txt. + ing. contexte",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Y649xrHy2wp9MoNA",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.chatInput }}",
+        "guardrails": {
+          "jailbreak": {
+            "value": {
+              "threshold": 0.7
+            }
+          },
+          "nsfw": {
+            "value": {
+              "threshold": 0.7
+            }
+          },
+          "secretKeys": {
+            "value": {
+              "permissiveness": "balanced"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.guardrails",
+      "typeVersion": 2,
+      "position": [
+        176,
+        880
+      ],
+      "id": "738c1a3c-cf71-4d8d-a4e4-aa085c9714bd",
+      "name": "Guardrails"
+    },
+    {
+      "parameters": {
+        "message": "Ton prompte n'est pas valide.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1,
+      "position": [
+        544,
+        896
+      ],
+      "id": "dc71cf45-7cbf-4d57-90e6-c0c8c5476ace",
+      "name": "Prompte non-valide"
+    },
+    {
+      "parameters": {
+        "text": "={{ $('Chatbot').item.json.chatInput }}\n{{ JSON.stringify($json.allCsvData, null, 2) }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        1664,
+        688
+      ],
+      "id": "1ed0204e-8944-4b26-b537-89bd47675ae7",
+      "name": "Agent"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1760,
+        848
+      ],
+      "id": "bcabf575-a68c-46b1-a985-ecb25028a230",
+      "name": "Mémoire"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "files",
+              "value": "={{ $('Chatbot').item.json.files }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "0f033b47-ddd5-4696-99a8-9587bf497627",
+      "name": "Préparer les fichiers",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gemini-3-flash-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        176,
+        1056
+      ],
+      "id": "c497f6d6-13be-4b7e-aa2a-d99aed6841da",
+      "name": "Ollama Guard",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Y649xrHy2wp9MoNA",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gemini-3-flash-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1664,
+        848
+      ],
+      "id": "4e2b3b03-8a55-4a7c-b315-099b8fad8e6b",
+      "name": "Ollama Agent",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Y649xrHy2wp9MoNA",
+          "name": "Ollama account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Internet": {
+      "ai_tool": [
+        [
+          {
+            "node": "Traitement txt. + ing. contexte",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Séparer les fichiers": {
+      "main": [
+        [
+          {
+            "node": "Mapper les données binaires",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mapper les données binaires": {
+      "main": [
+        [
+          {
+            "node": "Itération sur les fichiers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Itération sur les fichiers": {
+      "main": [
+        [
+          {
+            "node": "Combiner des données CSV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extrait du fichier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrait du fichier": {
+      "main": [
+        [
+          {
+            "node": "Itération sur les fichiers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combiner des données CSV": {
+      "main": [
+        [
+          {
+            "node": "Traitement txt. + ing. contexte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chatbot": {
+      "main": [
+        [
+          {
+            "node": "Guardrails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardrails": {
+      "main": [
+        [
+          {
+            "node": "Préparer les fichiers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prompte non-valide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Traitement txt. + ing. contexte",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mémoire": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer les fichiers": {
+      "main": [
+        [
+          {
+            "node": "Séparer les fichiers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Guard": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Guardrails",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "53026080-ce24-4a25-b01f-df662e0aada2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c6d2fbe3f29f0c2a989f279e7bd923b83ddfd5108b5c96718abf62d435db1c57"
+  },
+  "id": "Kxxt4TTs3jFAU3x2",
+  "tags": [
+    {
+      "updatedAt": "2026-01-18T17:35:27.105Z",
+      "createdAt": "2026-01-18T17:35:27.105Z",
+      "id": "OHfKuIGpMIvkqHuo",
+      "name": "RQRAD"
+    },
+    {
+      "updatedAt": "2026-01-18T17:36:18.822Z",
+      "createdAt": "2026-01-18T17:36:18.822Z",
+      "id": "eDoxFZjAsrBRIetD",
+      "name": "Demo"
+    }
+  ]
+}
