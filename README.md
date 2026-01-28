@@ -19,5 +19,5 @@ This demo is to demonstrate how to use open-source models (Ollama) and automatio
 # Context Engineering
 ![Context Engineering](gifs/RQRAD_chat_ing_context.gif)
 
-Author: Haechan Mark Bong
-Linkedin: https://www.linkedin.com/in/haechan-mark-bong/
+# Author
+Haechan Mark Bong (https://www.linkedin.com/in/haechan-mark-bong/)
