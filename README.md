@@ -7,8 +7,8 @@ This demo is to demonstrate how to use open-source models (Ollama) and automatio
 - Create an account at n8n (https://n8n.io/)
 - Create a workflow
 - Create credentials
-![howto](gifs/howto.gif)
 
+![howto](gifs/howto.gif)
 
 # Standard
 ![Standard](gifs/RQRAD_chat.gif)
